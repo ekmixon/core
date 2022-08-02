@@ -428,9 +428,10 @@ class ADBDevice(MediaPlayerEntity):
         self._screencap = screencap
 
         # ADB exceptions to catch
-        if not self.aftv.adb_server_ip:
-            # Using "adb_shell" (Python ADB implementation)
-            self.exceptions = (
+        self.exceptions = (
+            (ConnectionResetError, RuntimeError)
+            if self.aftv.adb_server_ip
+            else (
                 AdbTimeoutError,
                 BrokenPipeError,
                 ConnectionResetError,
@@ -440,9 +441,7 @@ class ADBDevice(MediaPlayerEntity):
                 InvalidResponseError,
                 TcpTimeoutException,
             )
-        else:
-            # Using "pure-python-adb" (communicate with ADB server)
-            self.exceptions = (ConnectionResetError, RuntimeError)
+        )
 
         # Property attributes
         self._attr_extra_state_attributes = {
@@ -619,10 +618,11 @@ class AndroidTVDevice(ADBDevice):
             )
             sources = [
                 self._app_id_to_name.get(
-                    app_id, app_id if not self._exclude_unnamed_apps else None
+                    app_id, None if self._exclude_unnamed_apps else app_id
                 )
                 for app_id in running_apps
             ]
+
             self._attr_source_list = [source for source in sources if source]
         else:
             self._attr_source_list = None
@@ -688,10 +688,11 @@ class FireTVDevice(ADBDevice):
             )
             sources = [
                 self._app_id_to_name.get(
-                    app_id, app_id if not self._exclude_unnamed_apps else None
+                    app_id, None if self._exclude_unnamed_apps else app_id
                 )
                 for app_id in running_apps
             ]
+
             self._attr_source_list = [source for source in sources if source]
         else:
             self._attr_source_list = None

@@ -38,9 +38,10 @@ async def async_setup_entry(
 
     coordinator: AccuWeatherDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
 
-    sensors: list[AccuWeatherSensor] = []
-    for description in SENSOR_TYPES:
-        sensors.append(AccuWeatherSensor(name, coordinator, description))
+    sensors: list[AccuWeatherSensor] = [
+        AccuWeatherSensor(name, coordinator, description)
+        for description in SENSOR_TYPES
+    ]
 
     if coordinator.forecast:
         for description in FORECAST_SENSOR_TYPES:

@@ -194,8 +194,9 @@ class AmcrestCam(Camera):
             _LOGGER.warning(
                 "Attempt to take snapshot when %s camera is %s",
                 self.name,
-                "offline" if not available else "off",
+                "off" if available else "offline",
             )
+
             raise CannotSnapshot
 
     async def _async_get_image(self) -> None:
@@ -385,29 +386,23 @@ class AmcrestCam(Camera):
 
     def update(self) -> None:
         """Update entity status."""
-        if not self.available or self._update_succeeded:
-            if not self.available:
-                self._update_succeeded = False
+        if not self.available:
+            self._update_succeeded = False
+            return
+        elif self._update_succeeded:
             return
         _LOGGER.debug("Updating %s camera", self.name)
         try:
             if self._brand is None:
                 resp = self._api.vendor_information.strip()
                 _LOGGER.debug("Assigned brand=%s", resp)
-                if resp:
-                    self._brand = resp
-                else:
-                    self._brand = "unknown"
+                self._brand = resp or "unknown"
             if self._model is None:
                 resp = self._api.device_type.strip()
                 _LOGGER.debug("Assigned model=%s", resp)
-                if resp:
-                    self._model = resp
-                else:
-                    self._model = "unknown"
+                self._model = resp or "unknown"
             if self._attr_unique_id is None:
-                serial_number = self._api.serial_number.strip()
-                if serial_number:
+                if serial_number := self._api.serial_number.strip():
                     self._attr_unique_id = (
                         f"{serial_number}-{self._resolution}-{self._channel}"
                     )

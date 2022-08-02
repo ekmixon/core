@@ -124,10 +124,12 @@ class AemetForecastSensor(AbstractAemetSensor):
     @property
     def native_value(self):
         """Return the state of the device."""
-        forecast = None
-        forecasts = self.coordinator.data.get(
-            FORECAST_MODE_ATTR_API[self._forecast_mode]
+        return (
+            forecasts[0].get(self.entity_description.key)
+            if (
+                forecasts := self.coordinator.data.get(
+                    FORECAST_MODE_ATTR_API[self._forecast_mode]
+                )
+            )
+            else None
         )
-        if forecasts:
-            forecast = forecasts[0].get(self.entity_description.key)
-        return forecast

@@ -196,7 +196,7 @@ async def async_get_zeroconf(hass: HomeAssistant) -> dict[str, list[dict[str, st
                 typ = entry["type"]
                 entry_without_type = entry.copy()
                 del entry_without_type["type"]
-                data.update(entry_without_type)
+                data |= entry_without_type
             else:
                 typ = entry
 
@@ -213,8 +213,10 @@ async def async_get_dhcp(hass: HomeAssistant) -> list[dict[str, str]]:
     for integration in integrations.values():
         if not integration.dhcp:
             continue
-        for entry in integration.dhcp:
-            dhcp.append({"domain": integration.domain, **entry})
+        dhcp.extend(
+            {"domain": integration.domain, **entry}
+            for entry in integration.dhcp
+        )
 
     return dhcp
 
@@ -227,13 +229,13 @@ async def async_get_usb(hass: HomeAssistant) -> list[dict[str, str]]:
     for integration in integrations.values():
         if not integration.usb:
             continue
-        for entry in integration.usb:
-            usb.append(
-                {
-                    "domain": integration.domain,
-                    **{k: v for k, v in entry.items() if k != "known_devices"},
-                }
-            )
+        usb.extend(
+            {
+                "domain": integration.domain,
+                **{k: v for k, v in entry.items() if k != "known_devices"},
+            }
+            for entry in integration.usb
+        )
 
     return usb
 

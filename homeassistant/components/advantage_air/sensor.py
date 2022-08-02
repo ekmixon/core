@@ -26,13 +26,23 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
 
     entities = []
     for ac_key, ac_device in instance["coordinator"].data["aircons"].items():
-        entities.append(AdvantageAirTimeTo(instance, ac_key, "On"))
-        entities.append(AdvantageAirTimeTo(instance, ac_key, "Off"))
+        entities.extend(
+            (
+                AdvantageAirTimeTo(instance, ac_key, "On"),
+                AdvantageAirTimeTo(instance, ac_key, "Off"),
+            )
+        )
+
         for zone_key, zone in ac_device["zones"].items():
             # Only show damper and temp sensors when zone is in temperature control
             if zone["type"] != 0:
-                entities.append(AdvantageAirZoneVent(instance, ac_key, zone_key))
-                entities.append(AdvantageAirZoneTemp(instance, ac_key, zone_key))
+                entities.extend(
+                    (
+                        AdvantageAirZoneVent(instance, ac_key, zone_key),
+                        AdvantageAirZoneTemp(instance, ac_key, zone_key),
+                    )
+                )
+
             # Only show wireless signal strength sensors when using wireless sensors
             if zone["rssi"] > 0:
                 entities.append(AdvantageAirZoneSignal(instance, ac_key, zone_key))

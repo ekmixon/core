@@ -185,8 +185,7 @@ class AlexaCapability:
         if (instance := self.instance) is not None:
             result["instance"] = instance
 
-        properties_supported = self.properties_supported()
-        if properties_supported:
+        if properties_supported := self.properties_supported():
             result["properties"] = {
                 "supported": self.properties_supported(),
                 "proactivelyReported": self.properties_proactively_reported(),
@@ -205,33 +204,25 @@ class AlexaCapability:
         if supports_deactivation is not None:
             result["supportsDeactivation"] = supports_deactivation
 
-        capability_resources = self.capability_resources()
-        if capability_resources:
+        if capability_resources := self.capability_resources():
             result["capabilityResources"] = capability_resources
 
-        configuration = self.configuration()
-        if configuration:
+        if configuration := self.configuration():
             result["configuration"] = configuration
 
-        # The plural configurations object is different than the singular configuration object above.
-        configurations = self.configurations()
-        if configurations:
+        if configurations := self.configurations():
             result["configurations"] = configurations
 
-        semantics = self.semantics()
-        if semantics:
+        if semantics := self.semantics():
             result["semantics"] = semantics
 
-        supported_operations = self.supported_operations()
-        if supported_operations:
+        if supported_operations := self.supported_operations():
             result["supportedOperations"] = supported_operations
 
-        inputs = self.inputs()
-        if inputs:
+        if inputs := self.inputs():
             result["inputs"] = inputs
 
-        camera_stream_configurations = self.camera_stream_configurations()
-        if camera_stream_configurations:
+        if camera_stream_configurations := self.camera_stream_configurations():
             result["cameraStreamConfigurations"] = camera_stream_configurations
 
         return result
@@ -940,9 +931,7 @@ class AlexaContactSensor(AlexaCapability):
         if name != "detectionState":
             raise UnsupportedProperty(name)
 
-        if self.entity.state == STATE_ON:
-            return "DETECTED"
-        return "NOT_DETECTED"
+        return "DETECTED" if self.entity.state == STATE_ON else "NOT_DETECTED"
 
 
 class AlexaMotionSensor(AlexaCapability):
@@ -989,9 +978,7 @@ class AlexaMotionSensor(AlexaCapability):
         if name != "detectionState":
             raise UnsupportedProperty(name)
 
-        if self.entity.state == STATE_ON:
-            return "DETECTED"
-        return "NOT_DETECTED"
+        return "DETECTED" if self.entity.state == STATE_ON else "NOT_DETECTED"
 
 
 class AlexaThermostatController(AlexaCapability):
@@ -1030,8 +1017,7 @@ class AlexaThermostatController(AlexaCapability):
         if supported & climate.SUPPORT_TARGET_TEMPERATURE:
             properties.append({"name": "targetSetpoint"})
         if supported & climate.SUPPORT_TARGET_TEMPERATURE_RANGE:
-            properties.append({"name": "lowerSetpoint"})
-            properties.append({"name": "upperSetpoint"})
+            properties.extend(({"name": "lowerSetpoint"}, {"name": "upperSetpoint"}))
         return properties
 
     def properties_proactively_reported(self):
@@ -1099,11 +1085,9 @@ class AlexaThermostatController(AlexaCapability):
             if thermostat_mode := API_THERMOSTAT_MODES.get(mode):
                 supported_modes.append(thermostat_mode)
 
-        preset_modes = self.entity.attributes.get(climate.ATTR_PRESET_MODES)
-        if preset_modes:
+        if preset_modes := self.entity.attributes.get(climate.ATTR_PRESET_MODES):
             for mode in preset_modes:
-                thermostat_mode = API_THERMOSTAT_PRESETS.get(mode)
-                if thermostat_mode:
+                if thermostat_mode := API_THERMOSTAT_PRESETS.get(mode):
                     supported_modes.append(thermostat_mode)
 
         # Return False for supportsScheduling until supported with event listener in handler.
@@ -1220,8 +1204,6 @@ class AlexaSecurityPanelController(AlexaCapability):
         """Return configuration object with supported authorization types."""
         code_format = self.entity.attributes.get(ATTR_CODE_FORMAT)
         supported = self.entity.attributes[ATTR_SUPPORTED_FEATURES]
-        configuration = {}
-
         supported_arm_states = [{"value": "DISARMED"}]
         if supported & SUPPORT_ALARM_ARM_AWAY:
             supported_arm_states.append({"value": "ARMED_AWAY"})
@@ -1230,8 +1212,7 @@ class AlexaSecurityPanelController(AlexaCapability):
         if supported & SUPPORT_ALARM_ARM_NIGHT:
             supported_arm_states.append({"value": "ARMED_NIGHT"})
 
-        configuration["supportedArmStates"] = supported_arm_states
-
+        configuration = {"supportedArmStates": supported_arm_states}
         if code_format == FORMAT_NUMBER:
             configuration["supportedAuthorizationTypes"] = [{"type": "FOUR_DIGIT_PIN"}]
 
@@ -1511,10 +1492,10 @@ class AlexaRangeController(AlexaCapability):
             speed_list = self.entity.attributes.get(vacuum.ATTR_FAN_SPEED_LIST)
             speed = self.entity.attributes.get(vacuum.ATTR_FAN_SPEED)
             if speed_list is not None and speed is not None:
-                speed_index = next(
+                return next(
                     (i for i, v in enumerate(speed_list) if v == speed), None
                 )
-                return speed_index
+
 
         return None
 
@@ -1960,14 +1941,17 @@ class AlexaEqualizerController(AlexaCapability):
 
     def configurations(self):
         """Return the sound modes supported in the configurations object."""
-        configurations = None
-        supported_sound_modes = self.get_valid_inputs(
-            self.entity.attributes.get(media_player.ATTR_SOUND_MODE_LIST, [])
+        return (
+            {"modes": {"supported": supported_sound_modes}}
+            if (
+                supported_sound_modes := self.get_valid_inputs(
+                    self.entity.attributes.get(
+                        media_player.ATTR_SOUND_MODE_LIST, []
+                    )
+                )
+            )
+            else None
         )
-        if supported_sound_modes:
-            configurations = {"modes": {"supported": supported_sound_modes}}
-
-        return configurations
 
     @classmethod
     def get_valid_inputs(cls, sound_mode_list):

@@ -344,9 +344,10 @@ class AppleTVManager:
         if self.atv:
             dev_info = self.atv.device_info
 
-            attrs[ATTR_MODEL] = (
-                DEFAULT_NAME + " " + dev_info.model.name.replace("Gen", "")
+            attrs[ATTR_MODEL] = f"{DEFAULT_NAME} " + dev_info.model.name.replace(
+                "Gen", ""
             )
+
             attrs[ATTR_SW_VERSION] = dev_info.version
 
             if dev_info.mac:

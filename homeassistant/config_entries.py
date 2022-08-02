@@ -814,10 +814,11 @@ class ConfigEntries:
         if (entry := self.async_get_entry(entry_id)) is None:
             raise UnknownEntry
 
-        if not entry.state.recoverable:
-            unload_success = entry.state is not ConfigEntryState.FAILED_UNLOAD
-        else:
-            unload_success = await self.async_unload(entry_id)
+        unload_success = (
+            await self.async_unload(entry_id)
+            if entry.state.recoverable
+            else entry.state is not ConfigEntryState.FAILED_UNLOAD
+        )
 
         await entry.async_remove(self.hass)
 
@@ -1143,10 +1144,11 @@ class ConfigFlow(data_entry_flow.FlowHandler):
     @property
     def unique_id(self) -> str | None:
         """Return unique ID if available."""
-        if not self.context:
-            return None
-
-        return cast(Optional[str], self.context.get("unique_id"))
+        return (
+            cast(Optional[str], self.context.get("unique_id"))
+            if self.context
+            else None
+        )
 
     @staticmethod
     @callback
@@ -1219,11 +1221,14 @@ class ConfigFlow(data_entry_flow.FlowHandler):
                 if progress["context"].get("unique_id") == DEFAULT_DISCOVERY_UNIQUE_ID:
                     self.hass.config_entries.flow.async_abort(progress["flow_id"])
 
-        for entry in self._async_current_entries(include_ignore=True):
-            if entry.unique_id == unique_id:
-                return entry
-
-        return None
+        return next(
+            (
+                entry
+                for entry in self._async_current_entries(include_ignore=True)
+                if entry.unique_id == unique_id
+            ),
+            None,
+        )
 
     @callback
     def _set_confirm_only(
@@ -1329,8 +1334,8 @@ class ConfigFlow(data_entry_flow.FlowHandler):
     ) -> data_entry_flow.FlowResult:
         """Abort the config flow."""
         # Remove reauth notification if no reauth flows are in progress
-        if self.source == SOURCE_REAUTH and not any(
-            ent["context"]["source"] == SOURCE_REAUTH
+        if self.source == SOURCE_REAUTH and all(
+            ent["context"]["source"] != SOURCE_REAUTH
             for ent in self.hass.config_entries.flow.async_progress_by_handler(
                 self.handler
             )
@@ -1541,13 +1546,12 @@ def _handle_entry_updated_filter(event: Event) -> bool:
     Only handle changes to "disabled_by".
     If "disabled_by" was DISABLED_CONFIG_ENTRY, reload is not needed.
     """
-    if (
-        event.data["action"] != "update"
-        or "disabled_by" not in event.data["changes"]
-        or event.data["changes"]["disabled_by"] == entity_registry.DISABLED_CONFIG_ENTRY
-    ):
-        return False
-    return True
+    return (
+        event.data["action"] == "update"
+        and "disabled_by" in event.data["changes"]
+        and event.data["changes"]["disabled_by"]
+        != entity_registry.DISABLED_CONFIG_ENTRY
+    )
 
 
 async def support_entry_unload(hass: HomeAssistant, domain: str) -> bool:

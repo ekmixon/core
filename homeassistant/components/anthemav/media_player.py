@@ -107,9 +107,7 @@ class AnthemAVR(MediaPlayerEntity):
 
         if pwrstate is True:
             return STATE_ON
-        if pwrstate is False:
-            return STATE_OFF
-        return None
+        return STATE_OFF if pwrstate is False else None
 
     @property
     def is_volume_muted(self):

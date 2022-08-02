@@ -256,10 +256,7 @@ class AirtouchGroup(CoordinatorEntity, ClimateEntity):
         """Return hvac target hvac state."""
         # there are other power states that aren't 'on' but still count as on (eg. 'Turbo')
         is_off = self._unit.PowerState == "Off"
-        if is_off:
-            return HVAC_MODE_OFF
-
-        return HVAC_MODE_FAN_ONLY
+        return HVAC_MODE_OFF if is_off else HVAC_MODE_FAN_ONLY
 
     async def async_set_hvac_mode(self, hvac_mode):
         """Set new operation mode."""

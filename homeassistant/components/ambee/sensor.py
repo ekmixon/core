@@ -69,6 +69,4 @@ class AmbeeSensorEntity(CoordinatorEntity, SensorEntity):
     def native_value(self) -> StateType:
         """Return the state of the sensor."""
         value = getattr(self.coordinator.data, self.entity_description.key)
-        if isinstance(value, str):
-            return value.lower()
-        return value  # type: ignore[no-any-return]
+        return value.lower() if isinstance(value, str) else value

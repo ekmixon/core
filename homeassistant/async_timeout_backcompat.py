@@ -27,10 +27,7 @@ def timeout(
         _report(
             "called async_timeout.timeout with loop keyword argument. The loop keyword argument is deprecated and calls will fail after Home Assistant 2022.2"
         )
-    if delay is not None:
-        deadline: float | None = loop.time() + delay
-    else:
-        deadline = None
+    deadline = loop.time() + delay if delay is not None else None
     return async_timeout.Timeout(deadline, loop)
 
 
